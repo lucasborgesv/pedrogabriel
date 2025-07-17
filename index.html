@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análise Estratégica - Pedro Caça e Pesca</title>
+    
+    <!-- Dependências de Estilo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Fontes -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <!-- ESTILOS GLOBAIS E CUSTOMIZADOS -->
+    <style>
+        /* CORREÇÃO: Nova paleta de cores - Floresta Canadense */
+        :root {
+            --bg-main: #F4F1E9; /* Fundo terroso claro */
+            --text-main: #3D403D; /* Texto cinza-esverdeado escuro */
+            --forest-green: #2C5F2D; /* Verde pinho */
+            --lake-blue: #4A5859; /* Azul-acinzentado de lago */
+            --maple-red: #A4243B; /* Vermelho bordo */
+            --ochre-gold: #D8973C; /* Ocre dourado */
+            --cta-orange: #ED7D31; /* Laranja de conversão mantido */
+        }
+
+        /* Tipografia e Fundo */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+        }
+
+        /* EFEITO: Glassmorphism para o cabeçalho */
+        .glass-header {
+            background-color: rgba(244, 241, 233, 0.7); /* Fundo com transparência */
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        /* EFEITO: Card com sombra e hover aprimorados */
+        .card {
+            background-color: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 15px -1px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); /* Sombra mais forte no hover */
+        }
+
+        /* Estilo do título principal e subtítulo */
+        .main-title { color: var(--forest-green); }
+        .highlight-stat { font-size: 2.5rem; font-weight: 900; line-height: 1; color: var(--cta-orange); }
+        @media (min-width: 768px) { .highlight-stat { font-size: 3rem; } }
+
+        /* Estilo dos títulos de seção com a cor primária de conversão */
+        h2 {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: var(--text-main);
+            border-bottom: 3px solid var(--cta-orange);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        h3 { font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem; }
+
+        /* INTERATIVIDADE: Estilo para o conteúdo retrátil das seções */
+        .section-content { max-height: 2000px; overflow: hidden; transition: max-height 0.7s ease-in-out, opacity 0.5s ease-in-out; opacity: 1; }
+        .section-content.collapsed { max-height: 0; opacity: 0; }
+        .toggle-icon { transition: transform 0.3s ease; }
+        .collapsed .toggle-icon { transform: rotate(-180deg); }
+        .mobile-menu { transition: transform 0.3s ease-in-out; }
+        
+        /* ESTRUTURA: Timeline e Steps */
+        .timeline-item { position: relative; padding-bottom: 2rem; padding-left: 2.5rem; }
+        .timeline-item:not(:last-child)::before { content: ''; position: absolute; top: 0.5rem; left: 0.875rem; width: 2px; height: 100%; background-color: var(--lake-blue); }
+        .timeline-marker { position: absolute; top: 0.5rem; left: 0; width: 1.75rem; height: 1.75rem; border-radius: 9999px; background-color: var(--cta-orange); border: 4px solid var(--bg-main); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; }
+        .step { display: flex; align-items: center; margin-bottom: 1rem; }
+        .step-number { background-color: var(--cta-orange); color: white; border-radius: 9999px; width: 2rem; height: 2rem; display: flex; align-items: center; justify-content: center; font-weight: 700; margin-right: 1rem; flex-shrink: 0; }
+
+        /* EFEITOS: Animação de entrada para seções (controlado via JS com Intersection Observer) */
+        .section-animate { opacity: 0; transform: translateY(20px); transition: opacity 0.6s ease-out, transform 0.6s ease-out; }
+        .section-animate.visible { opacity: 1; transform: translateY(0); }
+
+    </style>
+</head>
+<body>
+
+    <!-- NAVEGAÇÃO: Cabeçalho fixo com links e menu mobile -->
+    <nav class="glass-header fixed top-0 left-0 right-0 z-50 p-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <a href="#" class="text-xl font-bold" style="color: var(--maple-red);">Pedro Caça e Pesca</a>
+            <div class="hidden lg:flex space-x-6" style="color: var(--text-main);">
+                <a href="#visao-geral" class="hover:text-forest-green transition-colors" style="--hover-color: var(--forest-green);">Visão Geral</a>
+                <a href="#metricas" class="hover:text-forest-green transition-colors" style="--hover-color: var(--forest-green);">Métricas</a>
+                <a href="#conteudo" class="hover:text-forest-green transition-colors" style="--hover-color: var(--forest-green);">Conteúdo</a>
+                <a href="#edicao" class="hover:text-forest-green transition-colors" style="--hover-color: var(--forest-green);">Edição</a>
+                <a href="#calendario" class="hover:text-forest-green transition-colors" style="--hover-color: var(--forest-green);">Calendário</a>
+                <a href="#plano-edicao" class="hover:text-forest-green transition-colors" style="--hover-color: var(--forest-green);">Plano de Edição</a>
+            </div>
+            <!-- Botão do Menu Mobile -->
+            <button id="menu-btn" class="lg:hidden z-50">
+                <svg class="w-6 h-6" style="color: var(--maple-red);" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+            </button>
+        </div>
+        <!-- Painel do Menu Mobile -->
+        <div id="mobile-menu" class="mobile-menu lg:hidden fixed top-0 left-0 w-full h-full glass-header flex flex-col items-center justify-center space-y-8 text-2xl transform translate-x-full">
+            <a href="#visao-geral" class="mobile-link" style="color: var(--forest-green);">Visão Geral</a>
+            <a href="#metricas" class="mobile-link" style="color: var(--forest-green);">Métricas</a>
+            <a href="#conteudo" class="mobile-link" style="color: var(--forest-green);">Conteúdo</a>
+            <a href="#edicao" class="mobile-link" style="color: var(--forest-green);">Edição</a>
+            <a href="#calendario" class="mobile-link" style="color: var(--forest-green);">Calendário</a>
+            <a href="#plano-edicao" class="mobile-link" style="color: var(--forest-green);">Plano de Edição</a>
+            <a href="#referencias" class="mobile-link" style="color: var(--forest-green);">Referências</a>
+        </div>
+    </nav>
+
+    <!-- CORREÇÃO: Wrapper principal para o conteúdo, com padding no topo para compensar o menu fixo de 4rem (h-16) -->
+    <div class="pt-16">
+        <header class="text-center mb-12 pt-8 px-4 md:px-8 section-animate">
+            <h1 class="text-4xl md:text-5xl font-black main-title mb-2">Plano de Crescimento Estratégico</h1>
+            <p class="text-xl text-gray-600">Feita por Lucas Borges</p>
+            <p class="text-xl text-gray-600">Para o canal: Pedro Caça e Pesca</p>
+        </header>
+
+        <main class="max-w-7xl mx-auto space-y-12 px-4 md:px-8">
+
+            <!-- Seção 1: Visão Geral -->
+            <section id="visao-geral" class="section-animate">
+                <div class="flex justify-between items-center cursor-pointer section-toggle">
+                    <h2>1. Visão Geral do Canal</h2>
+                    <svg class="w-6 h-6 toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+                <div class="section-content">
+                    <p class="mb-8 text-lg text-center text-gray-700">Análise dos dados reais do canal, revelando uma base sólida com grande potencial de reativação através de uma estratégia de conteúdo consistente e profissional.</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-center">
+                        <div class="card"><h3 style="color: var(--forest-green);">Inscritos Atuais</h3><p class="highlight-stat animate-pulse">26,4K</p><p class="text-gray-600 mt-2">Base sólida, mas com crescimento lento.</p></div>
+                        <div class="card"><h3 style="color: var(--forest-green);">Total de Visualizações</h3><p class="highlight-stat animate-pulse">~10M</p><p class="text-gray-600 mt-2">Marca expressiva que prova o apelo histórico.</p></div>
+                        <div class="card"><h3 style="color: var(--forest-green);">Média de Views</h3><p class="highlight-stat animate-pulse">~15K</p><p class="text-gray-600 mt-2">Otimizável com foco em CTR e retenção.</p></div>
+                        <div class="card"><h3 style="color: var(--forest-green);">Frequência</h3><p class="highlight-stat animate-pulse">0,5/sem</p><p class="text-gray-600 mt-2">Inconsistente. Aumentar é crucial.</p></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Seção 2: Métricas -->
+            <section id="metricas" class="section-animate">
+                <div class="flex justify-between items-center cursor-pointer section-toggle">
+                    <h2>2. Métricas Quantitativas</h2>
+                    <svg class="w-6 h-6 toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+                <div class="section-content">
+                    <p class="mb-8 text-lg text-center text-gray-700">Os dados mostram uma disparidade clara entre os vídeos mais populares e os recentes, indicando a necessidade de resgatar a fórmula de sucesso do canal.</p>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="card"><div class="chart-container h-80 md:h-96"><canvas id="popularVsRecentChart"></canvas></div></div>
+                        <div class="card"><div class="chart-container h-80 md:h-96"><canvas id="audienceChart"></canvas></div></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ... (restante das seções com a classe .section-animate) ... -->
+            <section id="conteudo" class="section-animate">
+                 <div class="flex justify-between items-center cursor-pointer section-toggle">
+                    <h2>3. Análise de Conteúdo e Storytelling</h2>
+                    <svg class="w-6 h-6 toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+                <div class="section-content">
+                    <p class="mb-8 text-lg text-center text-gray-700">A autenticidade é o maior trunfo. A falta de estrutura narrativa clara e ganchos fortes limita o potencial de cada vídeo.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="card" style="border-left: 4px solid var(--forest-green);">
+                            <h3>Pontos Fortes</h3>
+                            <ul class="list-inside space-y-2">
+                                <li class="flex items-start"><span class="mr-2" style="color: var(--forest-green);">✔</span> <strong>Autenticidade:</strong> Paixão genuína pelo tema.</li>
+                                <li class="flex items-start"><span class="mr-2" style="color: var(--forest-green);">✔</span> <strong>Nicho Único:</strong> Brasileiro caçando/pescando no Canadá.</li>
+                                <li class="flex items-start"><span class="mr-2" style="color: var(--forest-green);">✔</span> <strong>Qualidade de Imagem:</strong> Cenários espetaculares.</li>
+                            </ul>
+                        </div>
+                        <div class="card" style="border-left: 4px solid var(--maple-red);">
+                            <h3>Pontos Fracos</h3>
+                            <ul class="list-inside space-y-2">
+                                <li class="flex items-start"><span class="mr-2" style="color: var(--maple-red);">✖</span> <strong>Falta de Roteiro:</strong> Vídeos sem estrutura clara.</li>
+                                <li class="flex items-start"><span class="mr-2" style="color: var(--maple-red);">✖</span> <strong>Ganchos Fracos:</strong> Início dos vídeos não prende a atenção.</li>
+                                <li class="flex items-start"><span class="mr-2" style="color: var(--maple-red);">✖</span> <strong>Títulos e Thumbnails:</strong> Pouco atrativos e sem curiosidade.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="edicao" class="section-animate">
+                <div class="flex justify-between items-center cursor-pointer section-toggle">
+                    <h2>4. Diagnóstico Técnico de Edição</h2>
+                    <svg class="w-6 h-6 toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+                <div class="section-content">
+                     <p class="mb-8 text-lg text-center text-gray-700">A edição funcional, mas amadora, precisa ser elevada para um nível profissional, focando em ritmo, som e identidade visual para uma experiência imersiva.</p>
+                    <div class="card md:col-span-2">
+                        <h3>Avaliação Técnica (0-10)</h3>
+                        <div class="chart-container h-80 md:h-96"><canvas id="editingRadarChart"></canvas></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="oportunidades" class="section-animate">
+                 <div class="flex justify-between items-center cursor-pointer section-toggle">
+                    <h2>5. Oportunidades de Crescimento e Monetização</h2>
+                    <svg class="w-6 h-6 toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+                <div class="section-content">
+                    <p class="mb-8 text-lg text-center text-gray-700">O posicionamento único do canal permite explorar palavras-chave de baixa concorrência e diversificar as fontes de receita para além do AdSense.</p>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="card">
+                            <h3>Lacunas de Conteúdo e Palavras-Chave</h3>
+                            <ul class="space-y-3">
+                                <li class="flex items-center"><span class="text-xl mr-3" style="color: var(--ochre-gold);">🎯</span> "Caça no Canadá vs. Brasil"</li>
+                                <li class="flex items-center"><span class="text-xl mr-3" style="color: var(--ochre-gold);">🎯</span> "Como obter licença de caça no Canadá"</li>
+                                <li class="flex items-center"><span class="text-xl mr-3" style="color: var(--ochre-gold);">🎯</span> "Melhor bota para neve -30°C"</li>
+                                <li class="flex items-center"><span class="text-xl mr-3" style="color: var(--ochre-gold);">🎯</span> "Fazendo Picanha de Alce"</li>
+                            </ul>
+                        </div>
+                        <div class="card">
+                            <h3>Potencial de Receita (Estimativa Anual)</h3>
+                            <div class="chart-container h-80 md:h-96"><canvas id="revenueChart"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="calendario" class="section-animate">
+                <div class="flex justify-between items-center cursor-pointer section-toggle">
+                    <h2>6. Calendário de Conteúdo (90 Dias)</h2>
+                    <svg class="w-6 h-6 toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+                <div class="section-content">
+                    <p class="mb-8 text-lg text-center text-gray-700">Consistência é a chave. Este calendário cria um ritmo previsível, reengaja a audiência e atrai novos inscritos com uma mistura estratégica de formatos e temas.</p>
+                    <div class="card">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            <div><h3 class="pb-2 mb-4" style="border-bottom: 2px solid var(--ochre-gold);">Mês 1: A Reconstrução</h3><p class="mb-2">📹 <strong>Vídeo 1 (Relançamento):</strong> "Por que Eu Quase Desisti do YouTube? A Nova Fase do Canal"</p><p class="mb-2">📹 <strong>Vídeo 2 (Jornada):</strong> "SOZINHO na Floresta: Minha Primeira Caçada de Veado da Temporada (3 Dias)"</p><p class="mt-4">🔥 <strong>Shorts (4x/sem):</strong> Dicas rápidas, cortes de tensão, "Você Sabia?", bastidores.</p><p class="mt-2">🎙️ <strong>Live:</strong> Q&A sobre a nova fase do canal para gerar feedback.</p></div>
+                            <div><h3 class="pb-2 mb-4" style="border-bottom: 2px solid var(--ochre-gold);">Mês 2: A Expansão</h3><p class="mb-2">📹 <strong>Vídeo 1 (Guia):</strong> "Guia COMPLETO: Como Tirar sua Licença de Pesca no Canadá"</p><p class="mb-2">📹 <strong>Vídeo 2 (Catch & Cook):</strong> "Pesca no Gelo Extrema e o Melhor Peixe Frito que já fiz (-20°C)"</p><p class="mt-4">🔥 <strong>Shorts (4x/sem):</strong> Testes de iscas, "fails" engraçados, mostrando a espessura do gelo.</p><p class="mt-2">🎙️ <strong>Live:</strong> Transmissão ao vivo da pescaria no gelo (se a conexão permitir).</p></div>
+                            <div><h3 class="pb-2 mb-4" style="border-bottom: 2px solid var(--ochre-gold);">Mês 3: A Consolidação</h3><p class="mb-2">📹 <strong>Vídeo 1 (Review):</strong> "Meu Rifle de Caça para 2025: Review Completo e Teste de Tiros"</p><p class="mb-2">📹 <strong>Vídeo 2 (Jornada):</strong> "Atrás do 'Rei do Norte': 3 Dias Rastreando um Alce (Moose) em Ontario"</p><p class="mt-4">🔥 <strong>Shorts (4x/sem):</strong> Limpeza da arma (ASMR), comparativo de munição, reação ao avistar animais.</p><p class="mt-2">⭐ <strong>Bônus:</strong> Compilado dos melhores momentos dos 90 dias.</p></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="plano-edicao" class="section-animate">
+                <div class="flex justify-between items-center cursor-pointer section-toggle">
+                    <h2>7. Plano de Edição Profissional – Passo a Passo</h2>
+                    <svg class="w-6 h-6 toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+                <div class="section-content">
+                    <p class="mb-8 text-lg text-center text-gray-700">Esta é a receita para transformar filmagens brutas em vídeos cativantes. A seguir, o workflow de edição e o processo de colaboração remota para garantir agilidade e qualidade profissional.</p>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="card"><h3 style="color: var(--lake-blue);">Workflow de Edição (Sequência)</h3><div class="relative"><div class="timeline-item"><div class="timeline-marker">1</div><h4 class="font-bold">Organização e Proxies</h4><p class="text-sm text-gray-600">Gestão de ativos e criação de arquivos de baixa resolução para edição fluida.</p></div><div class="timeline-item"><div class="timeline-marker">2</div><h4 class="font-bold">Montagem da Narrativa</h4><p class="text-sm text-gray-600">Corte focado 100% na história, montando a espinha dorsal do vídeo.</p></div><div class="timeline-item"><div class="timeline-marker">3</div><h4 class="font-bold">Corte Fino e Ritmo</h4><p class="text-sm text-gray-600">Refinamento com J-cuts e L-cuts. Remoção de pausas para um ritmo dinâmico.</p></div><div class="timeline-item"><div class="timeline-marker">4</div><h4 class="font-bold">Design de Som</h4><p class="text-sm text-gray-600">Criação de paisagem sonora com narração tratada, trilha e efeitos (SFX).</p></div><div class="timeline-item"><div class="timeline-marker">5</div><h4 class="font-bold">Color Grading</h4><p class="text-sm text-gray-600">Correção de cor e aplicação de LUTs para identidade visual cinematográfica.</p></div><div class="timeline-item"><div class="timeline-marker">6</div><h4 class="font-bold">Gráficos e B-Roll</h4><p class="text-sm text-gray-600">Inserção de títulos, mapas e imagens de apoio para dinamismo.</p></div><div class="timeline-item"><div class="timeline-marker">7</div><h4 class="font-bold">Finalização</h4><p class="text-sm text-gray-600">Mixagem final de áudio e exportação em alta qualidade para o YouTube.</p></div></div></div>
+                        <div class="card"><h3 style="color: var(--lake-blue);">Colaboração Remota com Editor</h3><div class="flow-root"><div class="step"><div class="step-number">1</div><div><h4 class="font-bold">Entrega e Briefing</h4><p class="text-sm text-gray-600">Upload dos brutos e gravação de um vídeo-briefing via Loom explicando a história.</p></div></div><div class="flex justify-center h-8"><div class="w-px bg-gray-300"></div></div><div class="step"><div class="step-number">2</div><div><h4 class="font-bold">V1 (Draft da História)</h4><p class="text-sm text-gray-600">Editor entrega o primeiro corte focado na narrativa para revisão.</p></div></div><div class="flex justify-center h-8"><div class="w-px bg-gray-300"></div></div><div class="step"><div class="step-number">3</div><div><h4 class="font-bold">Ciclo de Feedback</h4><p class="text-sm text-gray-600">Uso de Frame.io ou Dropbox Replay para comentários precisos no vídeo.</p></div></div><div class="flex justify-center h-8"><div class="w-px bg-gray-300"></div></div><div class="step"><div class="step-number">4</div><div><h4 class="font-bold">Entrega Final</h4><p class="text-sm text-gray-600">Editor aplica o feedback final e entrega a versão aprovada para publicação.</p></div></div></div></div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <footer id="referencias" class="text-center pt-12 mt-12 border-t border-gray-300/50 section-animate">
+            <div class="max-w-4xl mx-auto">
+                <h2>8. Referências de Dados e Ferramentas</h2>
+                <p class="text-gray-600">Esta análise foi compilada usando dados públicos do YouTube e estimativas de performance baseadas em ferramentas de mercado. As projeções e recomendações são baseadas na implementação rigorosa do plano estratégico proposto.</p>
+                <div class="mt-4 text-sm text-gray-500"><p><strong>Ferramentas Chave:</strong> SocialBlade, VidIQ, Google Trends, Frame.io, DaVinci Resolve, BOOM Library.</p><p><strong>Programas de Afiliados:</strong> Amazon Associates, Mercado Livre, Decathlon.</p></div>
+                <div class="mt-8 text-sm text-gray-500"><p>Relatório Gerado em: 17 de Julho de 2025 por Lucas Borges - Studio</p></div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script>
+        // FUNÇÃO: Lógica para o menu mobile
+        const menuBtn = document.getElementById('menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const mobileLinks = document.querySelectorAll('.mobile-link');
+        const toggleMenu = () => mobileMenu.classList.toggle('translate-x-full');
+        menuBtn.addEventListener('click', toggleMenu);
+        mobileLinks.forEach(link => link.addEventListener('click', toggleMenu));
+
+        // FUNÇÃO: Lógica para expandir/recolher seções (acordeão)
+        document.querySelectorAll('.section-toggle').forEach(header => {
+            header.addEventListener('click', () => {
+                const content = header.nextElementSibling;
+                content.classList.toggle('collapsed');
+                header.classList.toggle('collapsed');
+            });
+        });
+        
+        // INTERATIVIDADE: Animação de entrada com Intersection Observer
+        const animatedSections = document.querySelectorAll('.section-animate');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+        animatedSections.forEach(section => observer.observe(section));
+
+        // FUNÇÃO: Utilitário para quebrar labels longas nos gráficos
+        const wrapLabel = (str, maxWidth) => {
+            if (typeof str !== 'string' || str.length <= maxWidth) return str;
+            const words = str.split(' ');
+            const lines = [];
+            let currentLine = '';
+            words.forEach(word => {
+                if ((currentLine + ' ' + word).trim().length > maxWidth && currentLine.length > 0) {
+                    lines.push(currentLine);
+                    currentLine = word;
+                } else {
+                    currentLine = (currentLine + ' ' + word).trim();
+                }
+            });
+            if (currentLine.length > 0) lines.push(currentLine);
+            return lines;
+        };
+
+        // FUNÇÃO: Callback para formatar o título do tooltip
+        const tooltipTitleCallback = (tooltipItems) => {
+            const item = tooltipItems[0];
+            let label = item.chart.data.labels[item.dataIndex];
+            return Array.isArray(label) ? label.join(' ') : label;
+        };
+        
+        // CONFIGURAÇÃO: Opções compartilhadas para os gráficos Chart.js
+        const sharedChartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 1000, easing: 'easeOutQuart' },
+            plugins: {
+                legend: { labels: { color: '#3D403D' } },
+                tooltip: { callbacks: { title: tooltipTitleCallback } }
+            },
+            scales: {
+                y: { beginAtZero: true, ticks: { color: '#4A5859' }, grid: { color: '#e0e0e0' } },
+                x: { ticks: { color: '#4A5859' }, grid: { display: false } }
+            }
+        };
+
+        // PALETA DE CORES: Floresta Canadense (definida no JS para os gráficos)
+        const palette = {
+            forestGreen: '#2C5F2D',
+            lakeBlue: '#4A5859',
+            mapleRed: '#A4243B',
+            ochreGold: '#D8973C',
+            ctaOrange: '#ED7D31'
+        };
+
+        // GRÁFICO 1: Performance Comparativa
+        new Chart(document.getElementById('popularVsRecentChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: [wrapLabel('Caça com rifle 22...', 16), wrapLabel('Abatendo Urso Preto!', 16), wrapLabel('Nova Temporada', 16)],
+                datasets: [
+                    { label: 'Views (Populares)', data: [30, 13, 0], backgroundColor: palette.forestGreen, stack: 'Stack 0' },
+                    { label: 'Views (Recentes)', data: [0, 0, 15], backgroundColor: palette.lakeBlue, stack: 'Stack 1' }
+                ]
+            },
+            options: { ...sharedChartOptions, scales: { ...sharedChartOptions.scales, y: { ...sharedChartOptions.scales.y, ticks: { ...sharedChartOptions.scales.y.ticks, callback: (v) => v + 'k' } } } }
+        });
+
+        // GRÁFICO 2: Distribuição de Público
+        new Chart(document.getElementById('audienceChart').getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Homens 25-34', 'Homens 35-44', 'Homens 45-54', 'Outros'],
+                datasets: [{ data: [45, 35, 15, 5], backgroundColor: [palette.forestGreen, palette.lakeBlue, palette.ochreGold, '#CCCCCC'], borderColor: '#F4F1E9', borderWidth: 4 }]
+            },
+            options: { ...sharedChartOptions, plugins: { ...sharedChartOptions.plugins, legend: { ...sharedChartOptions.plugins.legend, position: 'top' } } }
+        });
+
+        // GRÁFICO 3: Diagnóstico de Edição
+        new Chart(document.getElementById('editingRadarChart').getContext('2d'), {
+            type: 'radar',
+            data: {
+                labels: ['Ritmo', 'Áudio', 'Cor', 'B-Roll', 'Gráficos', 'Storytelling'],
+                datasets: [
+                    { label: 'Atual', data: [4, 3, 5, 6, 3, 4], backgroundColor: 'rgba(164, 36, 59, 0.2)', borderColor: palette.mapleRed, pointBackgroundColor: palette.mapleRed },
+                    { label: 'Meta', data: [9, 8, 8, 9, 7, 8], backgroundColor: 'rgba(44, 95, 45, 0.2)', borderColor: palette.forestGreen, pointBackgroundColor: palette.forestGreen }
+                ]
+            },
+            options: { ...sharedChartOptions, scales: { r: { min: 0, max: 10, pointLabels: { font: { size: 14 } }, ticks: { backdropColor: 'rgba(0,0,0,0)', color: '#3D403D' } } } }
+        });
+
+        // GRÁFICO 4: Potencial de Receita
+        new Chart(document.getElementById('revenueChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: ['Atual', wrapLabel('Ano 1 (Plano)', 16), wrapLabel('Ano 2 (Plano)', 16)],
+                datasets: [
+                    { label: 'AdSense', data: [100, 120, 150], backgroundColor: palette.forestGreen },
+                    { label: 'Afiliados', data: [0, 80, 200], backgroundColor: palette.ochreGold },
+                    { label: 'Patrocínios', data: [0, 50, 250], backgroundColor: palette.lakeBlue }
+                ]
+            },
+            options: { ...sharedChartOptions, scales: { x: { stacked: true }, y: { stacked: true, ticks: { callback: (v) => 'R$' + v + 'k' } } } }
+        });
+    </script>
+</body>
+</html>
